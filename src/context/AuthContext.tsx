@@ -1,8 +1,8 @@
-import { createContext, useState, useContext } from 'react';
+import { createContext, useState, useContext, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { authService } from '../services/auth';
 import type { User, LoginCredentials, RegisterData } from '../types/auth';
-
+ 
 interface AuthContextType {
   user: User | null;
   token: string | null;
@@ -12,35 +12,65 @@ interface AuthContextType {
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
 }
-
+ 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
+ 
+const TOKEN_KEY = 'ledgr_token';
+ 
 interface AuthProviderProps {
   children: ReactNode;
 }
-
+ 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [isLoading] = useState(false);
-
+  const [isLoading, setIsLoading] = useState(true);
+ 
+  // Al montar el Provider: validar token guardado en localStorage
+  useEffect(() => {
+    const initAuth = async () => {
+      const storedToken = localStorage.getItem(TOKEN_KEY);
+ 
+      if (!storedToken) {
+        setIsLoading(false);
+        return;
+      }
+ 
+      try {
+        const currentUser = await authService.getCurrentUser(storedToken);
+        setUser(currentUser);
+        setToken(storedToken);
+      } catch {
+        // Token inválido o expirado: lo borramos
+        localStorage.removeItem(TOKEN_KEY);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+ 
+    initAuth();
+  }, []);
+ 
   const login = async (credentials: LoginCredentials) => {
     const response = await authService.login(credentials);
     setUser(response.user);
     setToken(response.token);
+    localStorage.setItem(TOKEN_KEY, response.token);
   };
-
+ 
   const register = async (data: RegisterData) => {
     const response = await authService.register(data);
     setUser(response.user);
     setToken(response.token);
+    localStorage.setItem(TOKEN_KEY, response.token);
   };
-
+ 
   const logout = () => {
     setUser(null);
     setToken(null);
+    localStorage.removeItem(TOKEN_KEY);
   };
-
+ 
   const value: AuthContextType = {
     user,
     token,
@@ -50,10 +80,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     register,
     logout,
   };
-
+ 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-
+ 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
