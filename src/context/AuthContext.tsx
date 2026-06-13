@@ -25,8 +25,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
- 
-  // Al montar el Provider: validar token guardado en localStorage
+
   useEffect(() => {
     const initAuth = async () => {
       const storedToken = localStorage.getItem(TOKEN_KEY);
@@ -41,7 +40,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(currentUser);
         setToken(storedToken);
       } catch {
-        // Token inválido o expirado: lo borramos
         localStorage.removeItem(TOKEN_KEY);
       } finally {
         setIsLoading(false);
