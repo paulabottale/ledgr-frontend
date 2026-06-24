@@ -8,7 +8,7 @@ import type {
 const API_URL = import.meta.env.VITE_API_URL
 
 const buildHeaders = (token:string) => ({
-    'Content-Type': 'aplication/json',
+    'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
 })
 

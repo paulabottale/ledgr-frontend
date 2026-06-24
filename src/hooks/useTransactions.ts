@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { transactionService } from '../services/transaction'
-import type { TransactionFilters } from '../types/transaction'
+import type { TransactionFilters, CreateTransactionData } from '../types/transaction'
 
 export const transactionKeys = {
     all: ['transactions'] as const,
@@ -19,4 +19,17 @@ return useQuery({
     queryFn: () => transactionService.getAll(token!, filters),
     enabled: !!token,
 })
+}
+
+export const useCreateTransaction = () => {
+  const { token } = useAuth()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (payload: CreateTransactionData) =>
+      transactionService.create(token!, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: transactionKeys.all })
+    },
+  })
 }
